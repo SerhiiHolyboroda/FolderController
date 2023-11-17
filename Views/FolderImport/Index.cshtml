@@ -1,0 +1,93 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drag and Drop</title>
+    <style>
+        #drop-area {
+            width: 300px;
+            height: 200px;
+            border: 2px dashed #ccc;
+            margin: 20px auto;
+            text-align: center;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="drop-area">
+        Drop folders here
+    </div>
+
+    <script>
+        const dropArea = document.getElementById('drop-area');
+        let folderPaths = [];
+
+        dropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropArea.classList.add('highlight');
+        });
+
+        dropArea.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            dropArea.classList.remove('highlight');
+
+            folderPaths = [];
+            const items = Array.from(e.dataTransfer.items);
+
+            async function traverseDirectory(item, path = '') {
+                path += (path.length > 0 ? '/' : '') + item.name;
+                console.log(item.isDirectory ? 'Directory:' : 'File:', path);
+
+                if (item.isDirectory) {
+                    const entries = await readDirectory(item.createReader());
+                    folderPaths.push({ Name: item.name, Path: path }); 
+                    await Promise.all(entries.map(entry => traverseDirectory(entry, path)));
+                }
+            }
+
+            async function readDirectory(directoryReader) {
+                const entries = await new Promise((resolve) => {
+                    directoryReader.readEntries((result) => {
+                        resolve(Array.from(result));
+                    });
+                });
+                return entries;
+            }
+
+            try {
+                await Promise.all(items.map(async (item) => {
+                    await traverseDirectory(item.webkitGetAsEntry());
+                }));
+
+                console.log('Final folderPaths:', folderPaths);
+
+                folderPaths.forEach(folderPath => {
+                    const parentPath = folderPath.Path.substring(0, folderPath.Path.lastIndexOf('/'));
+                    const parentFolder = folderPaths.find(folder => folder.Path === parentPath);
+
+                    if (parentFolder) {
+                        folderPath.ParentId = parentFolder.Id;
+                    }
+                });
+
+                const response = await fetch('/FolderImport/ImportFromDrop', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(folderPaths),
+                });
+
+                console.log('Server Response:', response);
+                window.location.href = '/Folder/Index';
+            } catch (error) {
+                console.error('Error during directory traversal:', error);
+            }
+        });
+    </script>
+
+</body>
+</html>

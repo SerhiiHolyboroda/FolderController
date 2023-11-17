@@ -1,0 +1,46 @@
+﻿@model List<Folder>
+
+@if (Model != null && Model.Count > 0)
+{
+    <h1>Folders</h1>
+
+    <ul>
+        @foreach (var folder in Model)
+        {
+            <li>
+                <a asp-action="Index" asp-route-id="@folder.Id">
+                    @folder.Name
+                </a>
+
+                @if (folder.Children.Count > 0)
+                {
+                    <ul>
+                        @foreach (var child in folder.Children)
+                        {
+                            <li><a asp-action="Index" asp-route-id="@child.Id">@child.Name</a></li>
+                        }
+                    </ul>
+                }
+
+                @if (folder.ParentId == null)
+                {
+                    <form asp-action="ExportFolders" method="post" style="display:inline">
+                        <input type="hidden" name="id" value="@folder.Id" />
+                        <button type="submit">Download Folders</button>
+                    </form>
+
+                    <form asp-action="ExportJson" method="post" style="display:inline">
+                        <input type="hidden" name="id" value="@folder.Id" />
+                        <button type="submit">Download JSON</button>
+                    </form>
+                }
+            </li>
+        }
+    </ul>
+
+   
+}
+else
+{
+    <p>No data found.</p>
+}

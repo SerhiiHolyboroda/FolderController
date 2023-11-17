@@ -1,0 +1,31 @@
+﻿@model List<Folder>
+
+@if (Model != null && Model.Count > 0)
+{
+    <h1>Folders</h1>
+
+    <ul>
+        @foreach (var folder in Model)
+        {
+            <li>
+                <a asp-action="Index" asp-route-id="@folder.Id">
+                    @folder.Name
+                </a>
+
+                @if (folder.Children.Count > 0)
+                {
+                    <ul>
+                        @foreach (var child in folder.Children)
+                        {
+                            <li><a asp-action="Index" asp-route-id="@child.Id">@child.Name</a></li>
+                        }
+                    </ul>
+                }
+            </li>
+        }
+    </ul>
+}
+else
+{
+    <p>No data found.</p>
+}
